@@ -6,10 +6,11 @@ library(here)
 
 
 
-url <- 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQoRxmeOvIAQSqOtr2DMOBW_P4idYKzRmVtT7lpqwoH7ZWAonRwOcKR2GqE-yqUOhb5Ac_RUs4MBICe/pub?gid=903584642&single=true&output=csv'
-destfile <- "locations.csv"
-curl::curl_download(url, destfile)
-locations <- read_csv(destfile)
+# url <- 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQoRxmeOvIAQSqOtr2DMOBW_P4idYKzRmVtT7lpqwoH7ZWAonRwOcKR2GqE-yqUOhb5Ac_RUs4MBICe/pub?gid=903584642&single=true&output=csv'
+# destfile <- "locations.csv"
+# curl::curl_download(url, destfile)
+
+locations <- read_csv("locations.csv")
 tail(locations)
 
 
