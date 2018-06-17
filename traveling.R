@@ -50,9 +50,35 @@ write_csv(locations_all, "locations2.csv")
 locations_final <- locations_all %>% 
   mutate(lon = round(longitude*2,0)/2,
          lat = round(latitude*2,0)/2,
-         year =year(date_from)) %>% 
-  filter(city != "Kyiv")
+         year =year(date_from),
+         month = floor_date(date_from, unit = "month")) %>% 
+  filter(city != "Kyiv") %>% 
+  mutate(dday = day(date_from),
+         dmonth = as.factor(month(date_from)),
+         dyear = as.factor(year(date_from)))
 
+ggplot(locations_final, aes(x=month)) + geom_dotplot(dotsize = 0.5)
+
+locations_final %>% 
+  group_by(dyear, dmonth) %>% 
+  count(.drop = FALSE) %>% 
+ggplot(aes(x=dmonth, y=dyear, fill = as.factor(n))) + 
+  geom_tile(col = "black") +
+  theme_minimal() +
+  coord_fixed()+
+  scale_fill_brewer(type = "seq")
+
+dates <- tibble(date = seq(as.Date('2012-08-01'),
+                           as.Date(Sys.Date()),
+                           by = 'months')) %>% 
+  mutate(year = year(date),
+         home = if_else(date < "2014-09-01" | date > "2016-04-01", "Jacksonville", "Seattle"),
+         lon = if_else(home == 'Jacksonville', -81.5, -122.5),
+         lat = if_else(home == 'Jacksonville', 30.5, 47.5))
+
+dates_year <- dates %>% 
+  select(-date) %>% 
+  distinct()
 
 # dot map -----------------------------------------------------------------
 
@@ -69,13 +95,33 @@ map <- dots %>%
   filter((str_detect(country, "USA") == TRUE | str_detect(country, "Puerto Rico") == TRUE) & lon < 0 & lon > -125 & is.na(lakes)) %>% 
   select(-lakes)
 
-ggplot(map, aes(x=lon, y=lat)) + geom_point(size = .5)
+theme <- theme_void() +
+  theme(panel.background = element_rect(fill="grey95", color = NULL),
+        plot.background = element_rect(fill="grey90", color = NULL),
+        plot.title=element_text(face="bold", colour="grey10",size=26, hjust = 0.5),
+        plot.subtitle=element_text(colour="grey20",size=12),
+        plot.caption = element_text(colour="grey30",size=14))
 
+p_year <- ggplot() + 
+  geom_point(data=map, aes(x=lon, y=lat), size = 2, col = "grey80") +
+  geom_point(data=dates_year,aes(x=lon, y=lat, frame = year, cumulative = TRUE), size=2, col = "black") +
+  geom_point(data=dates_year,aes(x=lon, y=lat, frame = year), size=20, col = "blue", alpha = 0.4) +
+  geom_point(data=locations_final, aes(x=lon, y=lat, frame = year, cumulative = TRUE), col = "black", size = 2, alpha = 0.4)+
+  geom_point(data=locations_final, aes(x=lon, y=lat, frame = year), size = 12, col = 'red', alpha=0.3) +
+  theme +
+  labs(caption = "My traveling around the United States (+Canada) since first arriving to the country")+
+  coord_equal()
 
-p <- ggplot() + 
-  geom_point(data=map, aes(x=lon, y=lat), size = 0.5, alpha = 0.2, col = "grey70") +
-  geom_point(data=locations_final, aes(x=lon, y=lat, frame = date_from, cumulative = TRUE, col = as.factor(year)), size = 1, alpha = 0.3)+
-  geom_point(data=locations_final, aes(x=lon, y=lat, frame = date_from), size = 5, col = 'red') +
-  theme_void()
+gganimate(p_year, interval = 3, "output_year.gif", ani.width = 1000, ani.height = 560)
 
-gganimate(p, interval = .5)
+p_month <- ggplot() + 
+  geom_point(data=map, aes(x=lon, y=lat), size = 2, col = "grey80") +
+  geom_point(data=dates,aes(x=lon, y=lat, frame = date, cumulative = TRUE), size=2, col = "black") +
+  geom_point(data=dates,aes(x=lon, y=lat, frame = date), size=20, col = "blue", alpha = 0.4) +
+  geom_point(data=locations_final, aes(x=lon, y=lat, frame = month, cumulative = TRUE), col = "black", size = 2, alpha = 0.4)+
+  geom_point(data=locations_final, aes(x=lon, y=lat, frame = month), size = 12, col = 'red', alpha=0.3) +
+  theme +
+  coord_equal()
+
+gganimate(p_month, interval = 0.2, "output_month.gif", ani.width = 1000, ani.height = 560)
+
